@@ -15,8 +15,7 @@ Notifications and menu names follow your system language (English or Traditional
 With Homebrew:
 
 ```sh
-brew install KoukeNeko/tap/mark-it-down
-mark-it-down install
+brew install --cask KoukeNeko/tap/mark-it-down
 ```
 
 Or from source:
@@ -25,16 +24,21 @@ Or from source:
 ./install.sh
 ```
 
-If markitdown is missing, the installer sets it up for you (`uv` > `pipx` > a private Python virtual environment).
-Pick a language with `--lang en` or `--lang zh` (default: system language).
+If markitdown is missing, you are asked on first use and it is installed for you (`uv` > `pipx` > a private Python virtual environment).
+The Homebrew version uses English menu names; installing from source lets you pick with `--lang en` or `--lang zh` (default: system language).
 If the menu does not appear: System Settings → Keyboard → Keyboard Shortcuts → Services → Files and Folders.
 
 ## Uninstall
 
 ```sh
-mark-it-down uninstall            # remove the Quick Actions only
-mark-it-down uninstall --purge    # also remove markitdown
-brew uninstall mark-it-down
+brew uninstall --cask mark-it-down
+```
+
+If installed from source:
+
+```sh
+./uninstall.sh            # remove the Quick Actions only
+./uninstall.sh --purge    # also remove markitdown
 ```
 
 ## License
