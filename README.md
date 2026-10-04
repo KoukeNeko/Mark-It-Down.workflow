@@ -1,38 +1,42 @@
 # Mark It Down
 
-在 macOS Finder 對檔案按右鍵 → 快速動作，用 [markitdown](https://github.com/microsoft/markitdown) 轉成 Markdown：
+**English** | [繁體中文](README.zh-TW.md)
 
-- **Mark It Down - 複製到剪貼簿**
-- **Mark It Down - 存成 Markdown 檔**（在原檔旁存成 `.md`，已存在時改為 `-2`、`-3`…）
+Right-click files in macOS Finder → Quick Actions to convert them to Markdown with [markitdown](https://github.com/microsoft/markitdown):
 
-支援多選；完成會跳通知，失敗的檔案會逐一列出原因。
+- **Mark It Down - Copy to Clipboard**
+- **Mark It Down - Save as Markdown File** (saved next to the original as `.md`; an existing file gets `-2`, `-3`, … instead of being overwritten)
 
-## 安裝
+Multiple selection is supported. A notification appears when done, and any file that fails is listed with its reason.
+Notifications and menu names follow your system language (English or Traditional Chinese).
 
-用 Homebrew：
+## Install
+
+With Homebrew:
 
 ```sh
 brew install KoukeNeko/tap/mark-it-down
 mark-it-down install
 ```
 
-或直接從原始碼：
+Or from source:
 
 ```sh
 ./install.sh
 ```
 
-沒有 markitdown 時，安裝會自動補裝（`uv` > `pipx` > 自建 Python 虛擬環境）。
-若右鍵選單沒出現：系統設定 → 鍵盤 → 鍵盤快速鍵 → 服務 → 檔案和資料夾。
+If markitdown is missing, the installer sets it up for you (`uv` > `pipx` > a private Python virtual environment).
+Pick a language with `--lang en` or `--lang zh` (default: system language).
+If the menu does not appear: System Settings → Keyboard → Keyboard Shortcuts → Services → Files and Folders.
 
-## 移除
+## Uninstall
 
 ```sh
-mark-it-down uninstall            # 只移除快速動作
-mark-it-down uninstall --purge    # 連 markitdown 一併移除
+mark-it-down uninstall            # remove the Quick Actions only
+mark-it-down uninstall --purge    # also remove markitdown
 brew uninstall mark-it-down
 ```
 
-## 授權
+## License
 
-MIT，詳見 [LICENSE](LICENSE)。
+MIT. See [LICENSE](LICENSE).
