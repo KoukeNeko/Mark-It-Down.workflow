@@ -59,6 +59,7 @@ jobs:
       - name: Verify cask with Homebrew
         run: |
           brew tap-new --no-git local/verify
+          mkdir -p "$(brew --repository local/verify)/Casks"   # tap-new 只建 Formula/
           cp "$RUNNER_TEMP/$CASK.rb" "$(brew --repository local/verify)/Casks/$CASK.rb"
           brew audit --cask "local/verify/$CASK"
           brew install --cask "local/verify/$CASK"
