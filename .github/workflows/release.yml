@@ -1,12 +1,25 @@
 name: Release
 
-# 推 v* tag 時：驗證 -> 建置並上傳 zip -> 產生 cask -> 以 Homebrew 驗證 -> 推到 tap
+# push 到 main 時（且動到會進 cask 的檔案）：
+# 計算版本 -> 測試 -> 建置並上傳 zip -> 產生 cask -> 以 Homebrew 驗證 -> 推到 tap
+# 版本 = VERSION（基底，例如 0.1）+ main 的 commit 數量，例如 0.1.27
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths:
+      - "src/**"
+      - "build.py"
+      - "packaging/**"
+      - "VERSION"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false   # 排隊而不是中斷，避免發到一半被砍
 
 env:
   TAP_REPO: KoukeNeko/homebrew-tap
@@ -17,6 +30,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 需要完整歷史才能算 commit 數量
 
       - name: Require tap token
         env:
@@ -25,10 +40,13 @@ jobs:
           [ -n "$HOMEBREW_TAP_TOKEN" ] || {
             echo "::error::Repository secret HOMEBREW_TAP_TOKEN is not set"; exit 1; }
 
-      - name: Tag must match VERSION
+      - name: Compute version
         run: |
-          [ "${GITHUB_REF_NAME#v}" = "$(tr -d '[:space:]' < VERSION)" ] || {
-            echo "::error::Tag $GITHUB_REF_NAME does not match VERSION $(cat VERSION)"; exit 1; }
+          base="$(tr -d '[:space:]' < VERSION)"
+          version="$base.$(git rev-list --count HEAD)"
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "TAG=v$version" >> "$GITHUB_ENV"
+          echo "Releasing v$version"
 
       - name: Tests
         run: |
@@ -37,27 +55,29 @@ jobs:
 
       - name: Build Quick Actions zip
         run: |
-          version="${GITHUB_REF_NAME#v}"
           python3 build.py "$RUNNER_TEMP/pkg" en
-          (cd "$RUNNER_TEMP/pkg" && zip -qry -X "$RUNNER_TEMP/Mark-It-Down-$version.zip" ./*.workflow)
-          unzip -l "$RUNNER_TEMP/Mark-It-Down-$version.zip"
+          (cd "$RUNNER_TEMP/pkg" && zip -qry -X "$RUNNER_TEMP/Mark-It-Down-$VERSION.zip" ./*.workflow)
+          unzip -l "$RUNNER_TEMP/Mark-It-Down-$VERSION.zip"
 
       - name: Create GitHub release and upload zip
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
-          gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/Mark-It-Down-$version.zip" --clobber
-          # 草稿 release 的檔案不是公開的（cask 下載會 404），所以一定要發布
-          if [ "$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft)" = true ]; then
-            gh release edit "$GITHUB_REF_NAME" --draft=false
+          zip="$RUNNER_TEMP/Mark-It-Down-$VERSION.zip"
+          # 先建草稿並附上檔案，再發布（相容「發布後不可再改」的 immutable release 設定）
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$zip" --clobber
+          else
+            gh release create "$TAG" "$zip" --draft --target "$GITHUB_SHA" --generate-notes
+          fi
+          # 草稿的檔案不是公開的（cask 下載會 404），所以一定要發布
+          if [ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" = true ]; then
+            gh release edit "$TAG" --draft=false
           fi
 
       - name: Render cask
         run: |
-          packaging/render-cask.sh "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" > "$RUNNER_TEMP/$CASK.rb"
+          packaging/render-cask.sh "$GITHUB_REPOSITORY" "$TAG" > "$RUNNER_TEMP/$CASK.rb"
           cat "$RUNNER_TEMP/$CASK.rb"
 
       - name: Verify cask with Homebrew
@@ -89,5 +109,5 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "$CASK ${GITHUB_REF_NAME#v}"
+          git commit -m "$CASK $VERSION"
           git push origin "HEAD:$branch"
