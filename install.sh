@@ -1,12 +1,17 @@
 #!/bin/bash
 # 安裝 Mark It Down 快速動作到 ~/Library/Services，並確保 markitdown 可用
 set -uo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit 1
 
 [ "$(uname)" = Darwin ] || { echo "此工具僅支援 macOS" >&2; exit 1; }
-python3 build.py || { echo "建置失敗：需要 python3（請執行 xcode-select --install）" >&2; exit 1; }
+
+# 建置到暫存資料夾，不在安裝來源（例如 Homebrew 的 keg）裡寫檔
+DIST="$(mktemp -d)" || exit 1
+trap 'rm -rf "$DIST"' EXIT
+python3 build.py "$DIST" >/dev/null || { echo "建置失敗：需要 python3（請執行 xcode-select --install）" >&2; exit 1; }
+
 mkdir -p "$HOME/Library/Services" || exit 1
-for w in dist/*.workflow; do
+for w in "$DIST"/*.workflow; do
   rm -rf "$HOME/Library/Services/$(basename "$w")"
   cp -R "$w" "$HOME/Library/Services/" || { echo "複製 $w 失敗" >&2; exit 1; }
   echo "installed: $(basename "$w")"

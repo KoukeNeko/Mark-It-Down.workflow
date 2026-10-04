@@ -1,0 +1,21 @@
+#!/bin/bash
+# mark-it-down — 安裝 / 移除 Finder 快速動作（Homebrew 安裝後的入口指令）
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<'USAGE'
+用法：mark-it-down <指令>
+
+  install              安裝 Finder 快速動作（並確保 markitdown 可用）
+  uninstall [--purge]  移除快速動作；--purge 連 markitdown 一併移除
+  version              顯示版本
+USAGE
+}
+
+case "${1:-help}" in
+  install)   shift; exec "$here/install.sh" "$@" ;;
+  uninstall) shift; exec "$here/uninstall.sh" "$@" ;;
+  version|-v|--version) tr -d '[:space:]' <"$here/VERSION"; echo ;;
+  help|-h|--help) usage ;;
+  *) usage >&2; exit 2 ;;
+esac

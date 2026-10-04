@@ -1,0 +1,28 @@
+class MarkItDown < Formula
+  desc "Finder Quick Actions that convert files to Markdown with markitdown"
+  homepage "https://github.com/@REPO@"
+  url "@URL@"
+  sha256 "@SHA256@"
+
+  depends_on :macos
+  depends_on "uv"
+
+  def install
+    libexec.install Dir["*"]
+    bin.write_exec_script libexec/"mark-it-down"
+  end
+
+  def caveats
+    <<~EOS
+      Install the Finder Quick Actions with:
+        mark-it-down install
+
+      Remove them before uninstalling this formula with:
+        mark-it-down uninstall
+    EOS
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/mark-it-down version")
+  end
+end

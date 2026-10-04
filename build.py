@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""產生兩個 Finder 快速動作（.workflow）到 dist/。"""
-import plistlib, uuid, shutil
+"""產生兩個 Finder 快速動作（.workflow）。用法：build.py [輸出資料夾，預設 dist/]"""
+import plistlib, sys, uuid, shutil
 from pathlib import Path
 
 ROOT = Path(__file__).parent
@@ -91,7 +91,7 @@ def wflow(mode):
 
 
 def main():
-    dist = ROOT / "dist"
+    dist = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "dist"
     shutil.rmtree(dist, ignore_errors=True)
     for title, mode in ACTIONS.items():
         contents = dist / f"{title}.workflow" / "Contents"
