@@ -1,6 +1,6 @@
 name: Release
 
-# 推 v* tag 時：驗證 -> 建立 GitHub release -> 產生 formula -> 以 Homebrew 驗證 -> 推到 tap
+# 推 v* tag 時：驗證 -> 建置並上傳 zip -> 產生 cask -> 以 Homebrew 驗證 -> 推到 tap
 on:
   push:
     tags: ["v*"]
@@ -10,7 +10,7 @@ permissions:
 
 env:
   TAP_REPO: KoukeNeko/homebrew-tap
-  FORMULA: mark-it-down
+  CASK: mark-it-down
 
 jobs:
   release:
@@ -35,27 +35,39 @@ jobs:
           tests/smoke.sh bash
           tests/smoke.sh zsh
 
-      - name: Create GitHub release
+      - name: Build Quick Actions zip
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          python3 build.py "$RUNNER_TEMP/pkg" en
+          (cd "$RUNNER_TEMP/pkg" && zip -qry -X "$RUNNER_TEMP/Mark-It-Down-$version.zip" ./*.workflow)
+          unzip -l "$RUNNER_TEMP/Mark-It-Down-$version.zip"
+
+      - name: Create GitHub release and upload zip
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          version="${GITHUB_REF_NAME#v}"
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
             || gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+          gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/Mark-It-Down-$version.zip" --clobber
 
-      - name: Render formula
+      - name: Render cask
         run: |
-          packaging/render-formula.sh "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" > "$RUNNER_TEMP/$FORMULA.rb"
-          cat "$RUNNER_TEMP/$FORMULA.rb"
+          packaging/render-cask.sh "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" > "$RUNNER_TEMP/$CASK.rb"
+          cat "$RUNNER_TEMP/$CASK.rb"
 
-      - name: Verify formula with Homebrew
+      - name: Verify cask with Homebrew
         run: |
           brew tap-new --no-git local/verify
-          cp "$RUNNER_TEMP/$FORMULA.rb" "$(brew --repository local/verify)/Formula/$FORMULA.rb"
-          brew install "local/verify/$FORMULA"
-          brew test "local/verify/$FORMULA"
-          brew audit --formula "local/verify/$FORMULA"
+          cp "$RUNNER_TEMP/$CASK.rb" "$(brew --repository local/verify)/Casks/$CASK.rb"
+          brew audit --cask "local/verify/$CASK"
+          brew install --cask "local/verify/$CASK"
+          test -d "$HOME/Library/Services/Mark It Down - Copy to Clipboard.workflow"
+          test -d "$HOME/Library/Services/Mark It Down - Save as Markdown File.workflow"
+          brew uninstall --cask "local/verify/$CASK"
+          test ! -e "$HOME/Library/Services/Mark It Down - Copy to Clipboard.workflow"
 
-      - name: Publish formula to tap
+      - name: Publish cask to tap
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
@@ -63,13 +75,14 @@ jobs:
           cd "$RUNNER_TEMP/tap"
           git rev-parse --verify -q HEAD >/dev/null || git checkout -B main   # 全新的空 repo
           branch="$(git symbolic-ref --short HEAD)"
-          mkdir -p Formula
-          cp "$RUNNER_TEMP/$FORMULA.rb" "Formula/$FORMULA.rb"
-          git add Formula
+          mkdir -p Casks
+          cp "$RUNNER_TEMP/$CASK.rb" "Casks/$CASK.rb"
+          git rm -q --ignore-unmatch "Formula/$CASK.rb"   # 清掉舊的 formula 版本
+          git add Casks
           if git diff --cached --quiet; then
-            echo "Formula already up to date"; exit 0
+            echo "Cask already up to date"; exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "$FORMULA ${GITHUB_REF_NAME#v}"
+          git commit -m "$CASK ${GITHUB_REF_NAME#v}"
           git push origin "HEAD:$branch"

@@ -59,7 +59,6 @@ _t_en() {
     u_none) f='No installed Quick Actions found (maybe already removed)' ;;
     u_keep) f='Keeping markitdown (%s); to remove it as well run: %s --purge' ;;
     u_done) f='Done!' ;;
-    cli_usage) f='Usage: mark-it-down <command>\n\n  install [--lang en|zh]    Install the Finder Quick Actions (and make sure markitdown is available)\n  uninstall [--purge]       Remove the Quick Actions; --purge also removes markitdown\n  version                   Show the version\n' ;;
     *) f="$1" ;;
   esac
   printf '%s' "$f"
@@ -112,7 +111,6 @@ _t_zh() {
     u_none) f='找不到已安裝的快速動作（可能已經移除）' ;;
     u_keep) f='保留 markitdown（%s）；要一併移除請執行：%s --purge' ;;
     u_done) f='完成！' ;;
-    cli_usage) f='用法：mark-it-down <指令>\n\n  install [--lang en|zh]    安裝 Finder 快速動作（並確保 markitdown 可用）\n  uninstall [--purge]       移除快速動作；--purge 連 markitdown 一併移除\n  version                   顯示版本\n' ;;
     *) f="$1" ;;
   esac
   printf '%s' "$f"

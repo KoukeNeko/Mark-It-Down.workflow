@@ -14,8 +14,8 @@ jobs:
       - name: ShellCheck
         run: |
           brew list shellcheck >/dev/null 2>&1 || brew install shellcheck
-          shellcheck -s bash src/*.sh install.sh uninstall.sh mark-it-down \
-            packaging/render-formula.sh tests/smoke.sh
+          shellcheck -s bash src/*.sh install.sh uninstall.sh \
+            packaging/render-cask.sh tests/smoke.sh
 
       - name: Build Quick Actions and lint plists
         run: |
@@ -31,7 +31,5 @@ jobs:
       - name: Smoke test (zsh, the Quick Action shell)
         run: tests/smoke.sh zsh
 
-      - name: Entry command
-        run: |
-          [ "$(./mark-it-down version)" = "$(tr -d '[:space:]' < VERSION)" ]
-          ./mark-it-down help
+      - name: Cask template syntax
+        run: ruby -c packaging/mark-it-down.cask.in

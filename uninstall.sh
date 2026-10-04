@@ -1,5 +1,6 @@
 #!/bin/bash
-# 移除 Mark It Down 快速動作。加 --purge 連 markitdown 本體一併移除
+# 移除「從原始碼安裝」的 Mark It Down 快速動作。加 --purge 連 markitdown 本體一併移除
+# （用 Homebrew Cask 安裝的請改用 brew uninstall --cask mark-it-down）
 set -uo pipefail
 cd "$(dirname "$0")" || exit 1
 
