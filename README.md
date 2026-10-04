@@ -40,3 +40,7 @@ brew uninstall mark-it-down
 3. CI 會建立 GitHub release、產生 formula、以 Homebrew 驗證，並推送到 `KoukeNeko/homebrew-tap`。
 
 需要在本 repo 設定 secret `HOMEBREW_TAP_TOKEN`（對 tap repo 有 Contents 寫入權限的 token）。
+
+## 授權
+
+MIT，詳見 [LICENSE](LICENSE)。
