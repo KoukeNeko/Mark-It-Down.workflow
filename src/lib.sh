@@ -1,5 +1,5 @@
 # 共用函式：尋找 / 安裝 markitdown（workflow 與 install.sh 共用）
-export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH:/usr/bin:/bin:/usr/sbin:/sbin"
 export LC_ALL="en_US.UTF-8" LANG="en_US.UTF-8" PYTHONIOENCODING="utf-8"
 
 MD_PKG='markitdown[all]'

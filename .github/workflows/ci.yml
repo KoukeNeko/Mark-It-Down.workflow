@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        run: |
+          brew list shellcheck >/dev/null 2>&1 || brew install shellcheck
+          shellcheck -s bash src/*.sh install.sh uninstall.sh mark-it-down \
+            packaging/render-formula.sh tests/smoke.sh
+
+      - name: Build Quick Actions and lint plists
+        run: |
+          python3 build.py "$RUNNER_TEMP/dist"
+          find "$RUNNER_TEMP/dist" -name '*.plist' -o -name '*.wflow' | while read -r f; do
+            plutil -lint "$f"
+          done
+
+      - name: Smoke test (bash)
+        run: tests/smoke.sh bash
+
+      - name: Smoke test (zsh, the Quick Action shell)
+        run: tests/smoke.sh zsh
+
+      - name: Entry command
+        run: |
+          [ "$(./mark-it-down version)" = "$(tr -d '[:space:]' < VERSION)" ]
+          ./mark-it-down help
