@@ -7,7 +7,7 @@ SH="${1:-bash}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 B="$T/bin"; mkdir -p "$B" "$T/home/Desktop" "$T/dir"
-export HOME="$T/home" PATH="$B:$PATH"
+export HOME="$T/home" PATH="$B:$PATH" MD_LANG=zh
 
 cat >"$B/markitdown" <<'X'
 #!/bin/sh
@@ -59,6 +59,29 @@ run file "$T/ok.docx"
 check "file: 已存在時改為 -2" '[ -f "$T/ok-2.md" ] && [ "$(cat "$T/ok.md")" = "# md of ok.docx" ]'
 run file "$T/ok.docx"
 check "file: 再重複改為 -3" '[ -f "$T/ok-3.md" ]'
+
+echo "== language: en =="
+export MD_LANG=en
+run copy "$T/ok.docx" "$T/bad.pdf" "$T/dep.pdf" "$T/empty.pdf" "$T/dir" "$T/nope.txt"
+check "en: failure title and reasons in English" 'grep -q "5 file(s) failed to convert" "$T/log" && grep -q "bad.pdf: unsupported file format" "$T/log" && grep -q "dir: is a folder" "$T/log"'
+check "en: no Chinese in the log" '! grep -qP "[^\x00-\x7F•]" "$T/log"'
+run copy "$T/ok.docx"
+check "en: copied notification" 'grep -q "Copied to clipboard (1 file(s))" "$T/log"'
+run copy
+check "en: no selection" 'grep -q "No files selected" "$T/log"'
+export MD_LANG=zh
+run copy "$T/ok.docx"
+check "zh: copied notification" 'grep -q "已複製到剪貼簿（1 個檔案）" "$T/log"'
+
+echo "== build: action names per language =="
+python3 "$ROOT/build.py" "$T/b-en" en >/dev/null && python3 "$ROOT/build.py" "$T/b-zh" zh >/dev/null
+check "build: en names" '[ -d "$T/b-en/Mark It Down - Copy to Clipboard.workflow" ] && [ -d "$T/b-en/Mark It Down - Save as Markdown File.workflow" ]'
+check "build: zh names" '[ -d "$T/b-zh/Mark It Down - 複製到剪貼簿.workflow" ] && [ -d "$T/b-zh/Mark It Down - 存成 Markdown 檔.workflow" ]'
+check "build: unknown lang falls back to en" 'python3 "$ROOT/build.py" "$T/b-xx" fr >/dev/null && [ -d "$T/b-xx/Mark It Down - Copy to Clipboard.workflow" ]'
+
+echo "== language detection =="
+check "detect: MD_LANG overrides" '[ "$(MD_LANG=zh-Hant "$SH" -c "source \"$ROOT/src/lib.sh\"; echo \$MD_L")" = zh ]'
+check "detect: non-Chinese -> en" '[ "$(MD_LANG=fr "$SH" -c "source \"$ROOT/src/lib.sh\"; echo \$MD_L")" = en ]'
 
 if [ "$(id -u)" != 0 ]; then
   mkdir -p "$T/ro"; touch "$T/ro/x.docx"; chmod 555 "$T/ro"

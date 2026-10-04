@@ -4,29 +4,30 @@ set -uo pipefail
 cd "$(dirname "$0")" || exit 1
 
 purge=0
-case "${1:-}" in
-  "") ;;
-  --purge) purge=1 ;;
-  *) echo "用法：$0 [--purge]" >&2; exit 2 ;;
-esac
-
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --purge) purge=1; shift ;;
+    --lang) export MD_LANG="${2:-}"; shift 2 ;;
+    *) source src/lib.sh; t u_usage "$0" >&2; echo >&2; exit 2 ;;
+  esac
+done
 # shellcheck source=src/lib.sh
 source src/lib.sh
 
 removed=0
 for w in "$HOME/Library/Services/Mark It Down - "*.workflow; do
   [ -e "$w" ] || continue
-  rm -rf "$w" && { echo "removed: $(basename "$w")"; removed=$((removed + 1)); }
+  rm -rf "$w" && { t u_removed "$(basename "$w")"; echo; removed=$((removed + 1)); }
 done
-[ "$removed" -eq 0 ] && echo "找不到已安裝的快速動作（可能已經移除）"
+[ "$removed" -eq 0 ] && { t u_none; echo; }
 /System/Library/CoreServices/pbs -flush 2>/dev/null || true
 
 # 本工具自建的虛擬環境與連結一定可以清；連結只有指向該環境時才刪
 link="$HOME/.local/bin/markitdown"
 if [ -L "$link" ] && [ "$(readlink "$link")" = "$MD_VENV/bin/markitdown" ]; then
-  rm -f "$link" && echo "removed: $link"
+  rm -f "$link" && { t u_removed "$link"; echo; }
 fi
-[ -d "$MD_VENV" ] && rm -rf "$MD_VENV" && echo "removed: $MD_VENV"
+[ -d "$MD_VENV" ] && rm -rf "$MD_VENV" && { t u_removed "$MD_VENV"; echo; }
 
 if [ "$purge" -eq 1 ]; then
   if command -v uv >/dev/null 2>&1 && uv tool list 2>/dev/null | grep -q '^markitdown'; then
@@ -36,6 +37,6 @@ if [ "$purge" -eq 1 ]; then
     pipx uninstall markitdown
   fi
 elif command -v markitdown >/dev/null 2>&1; then
-  echo "保留 markitdown（$(command -v markitdown)）；要一併移除請執行：$0 --purge"
+  t u_keep "$(command -v markitdown)" "$0"; echo
 fi
-echo "完成！"
+t u_done; echo

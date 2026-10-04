@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""產生兩個 Finder 快速動作（.workflow）。用法：build.py [輸出資料夾，預設 dist/]"""
+"""產生兩個 Finder 快速動作（.workflow）。用法：build.py [輸出資料夾，預設 dist/] [en|zh，預設 en]"""
 import plistlib, sys, uuid, shutil
 from pathlib import Path
 
@@ -7,9 +7,16 @@ ROOT = Path(__file__).parent
 SCRIPT = "\n".join((ROOT / "src" / n).read_text(encoding="utf-8")
                    for n in ("lib.sh", "mark-it-down.sh"))
 
+# 名稱一律以「Mark It Down - 」開頭，uninstall 靠這個前綴找到它們
 ACTIONS = {
-    "Mark It Down - 複製到剪貼簿": "copy",
-    "Mark It Down - 存成 Markdown 檔": "file",
+    "en": {
+        "Mark It Down - Copy to Clipboard": "copy",
+        "Mark It Down - Save as Markdown File": "file",
+    },
+    "zh": {
+        "Mark It Down - 複製到剪貼簿": "copy",
+        "Mark It Down - 存成 Markdown 檔": "file",
+    },
 }
 
 
@@ -93,7 +100,8 @@ def wflow(mode):
 def main():
     dist = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "dist"
     shutil.rmtree(dist, ignore_errors=True)
-    for title, mode in ACTIONS.items():
+    lang = sys.argv[2] if len(sys.argv) > 2 else "en"
+    for title, mode in ACTIONS.get(lang, ACTIONS["en"]).items():
         contents = dist / f"{title}.workflow" / "Contents"
         contents.mkdir(parents=True)
         with open(contents / "Info.plist", "wb") as f:

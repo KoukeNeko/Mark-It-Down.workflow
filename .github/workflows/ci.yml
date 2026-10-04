@@ -19,9 +19,10 @@ jobs:
 
       - name: Build Quick Actions and lint plists
         run: |
-          python3 build.py "$RUNNER_TEMP/dist"
-          find "$RUNNER_TEMP/dist" -name '*.plist' -o -name '*.wflow' | while read -r f; do
-            plutil -lint "$f"
+          for lang in en zh; do
+            python3 build.py "$RUNNER_TEMP/dist-$lang" "$lang"
+            find "$RUNNER_TEMP/dist-$lang" \( -name '*.plist' -o -name '*.wflow' \) -print0 \
+              | xargs -0 -n1 plutil -lint
           done
 
       - name: Smoke test (bash)
